@@ -12,17 +12,17 @@
 #define BITS_INSTRUCTION 32
 #define BITS_OPCODE       8    //2^8 instructions
 
-#define OPCODE_ADD 0x00
-#define OPCODE_SUB 0x01
-#define OPCODE_MUL 0x02
-#define OPCODE_DIV 0x03
-#define OPCODE_PUT 0x04
-#define OPCODE_AND 0x05
-#define OPCODE_OR  0x06
-#define OPCODE_NOT 0x07
-#define OPCODE_XOR 0x08
-#define OPCODE_JZ  0x09   
-#define OPCODE_JQ  0x10
+#define OPCODE_ADD  0x00
+#define OPCODE_SUB  0x01
+#define OPCODE_MUL  0x02
+#define OPCODE_DIV  0x03
+#define OPCODE_MOVE 0x04
+#define OPCODE_AND  0x05
+#define OPCODE_OR   0x06
+#define OPCODE_NOT  0x07
+#define OPCODE_XOR  0x08
+#define OPCODE_JZ   0x09   
+#define OPCODE_JQ   0x10
 
 typedef struct VirtualMachine VirtualMachine;
 typedef struct LogicInstructionsTwoInput AritmeticInstruction; //same structure but different operations!
@@ -33,6 +33,7 @@ typedef struct instruction{
 	unsigned int parameter:24;  
 	unsigned int opcode:8;      
 }instruction;
+
 typedef struct LogicInstructionsTwoInput{
 	unsigned int inputB:7; //inputB indicates where or what value will be used for compute instruction	
 	unsigned int inputA:8; //inputA indicates where or what value will be used for compute instruction
@@ -40,8 +41,6 @@ typedef struct LogicInstructionsTwoInput{
 	unsigned int addr:1;    //1-> the instruction will use Addr to get and store values Ex:
 	unsigned int opcode:8; //8 bits OPCODE
 }LogicInstructionsTwoInput;
-
-
 
 typedef struct VirtualMachine {
 	int PC;                          /*ProgramCounter*/
@@ -113,16 +112,17 @@ void loadCriature(unsigned int *criature, int n,VirtualMachine *vm){
   Return 1 if all okey
 */
 int addInstruction(instruction i,VirtualMachine *vm){
-	LogicInstructionsTwoInput add;
-	memcpy(&add, &i, sizeof(struct LogicInstructionsTwoInput));
+	AritmeticInstruction add;
+	memcpy(&add, &i, sizeof(AritmeticInstruction));
 	vm->datamemory[0] = 5;
 	//Check if instruction have access  the position of memory requested
-	if (haveAccessMemory(add.inputA,vm) == 0 || 
-	    haveAccessMemory(add.inputB,vm) == 0 || 
-	    haveAccessMemory(add.dest,vm)   == 0){
+	if (haveAccessMemory(add.dest,vm) == 0){
 		return 0;
 	}
 	if (add.addr == 1){
+		if (haveAccessMemory(add.inputA,vm) == 0 || haveAccessMemory(add.inputB,vm) == 0){
+			return 0;
+		}
 		vm->datamemory[add.dest] = vm->datamemory[add.inputA] + vm->datamemory[add.inputB];
 	}else{
 		vm->datamemory[add.dest] = add.inputA + add.inputB;
@@ -130,16 +130,17 @@ int addInstruction(instruction i,VirtualMachine *vm){
 	return 1;
 }
 int subInstruction(instruction i,VirtualMachine *vm){	
-	LogicInstructionsTwoInput sub;
-	memcpy(&sub, &i, sizeof(struct LogicInstructionsTwoInput));
+	AritmeticInstruction sub;
+	memcpy(&sub, &i, sizeof(AritmeticInstruction));
 	vm->datamemory[0] = 5;
 	//Check if instruction have access  the position of memory requested
-	if (haveAccessMemory(sub.inputA,vm) == 0 || 
-	    haveAccessMemory(sub.inputB,vm) == 0 || 
-	    haveAccessMemory(sub.dest,vm)   == 0){
+	if (haveAccessMemory(sub.dest,vm) == 0){
 		return 0;
 	}
 	if (sub.addr == 1){
+		if (haveAccessMemory(sub.inputA,vm) == 0 || haveAccessMemory(sub.inputB,vm) == 0){
+			return 0;
+		}
 		vm->datamemory[sub.dest] = vm->datamemory[sub.inputA] - vm->datamemory[sub.inputB];
 	}else{
 		vm->datamemory[sub.dest] = sub.inputA - sub.inputB;
@@ -147,8 +148,8 @@ int subInstruction(instruction i,VirtualMachine *vm){
 	return 1;
 }
 int mulInstruction(instruction i,VirtualMachine *vm){	
-	LogicInstructionsTwoInput mul;
-	memcpy(&mul, &i, sizeof(struct LogicInstructionsTwoInput));
+	AritmeticInstruction mul;
+	memcpy(&mul, &i, sizeof(AritmeticInstruction));
 	//Check if instruction have access  the position of memory requested
 	if (haveAccessMemory(mul.inputA,vm) == 0 || 
 	    haveAccessMemory(mul.inputB,vm) == 0 || 
@@ -156,6 +157,9 @@ int mulInstruction(instruction i,VirtualMachine *vm){
 		return 0;
 	}
 	if (mul.addr == 1){
+		if (haveAccessMemory(mul.inputA,vm) == 0 || haveAccessMemory(mul.inputB,vm) == 0){
+			return 0;
+		}
 		vm->datamemory[mul.dest] = vm->datamemory[mul.inputA] * vm->datamemory[mul.inputB];
 	}else{
 		vm->datamemory[mul.dest] = mul.inputA * mul.inputB;
@@ -163,25 +167,84 @@ int mulInstruction(instruction i,VirtualMachine *vm){
 	return 1;
 }
 int divInstruction(instruction i,VirtualMachine *vm){	
-	LogicInstructionsTwoInput div;
-	memcpy(&div, &i, sizeof(struct LogicInstructionsTwoInput));
+	AritmeticInstruction div;
+	memcpy(&div, &i, sizeof(AritmeticInstruction));
 	//Check if instruction have access  the position of memory requested
-	if (haveAccessMemory(div.inputA,vm) == 0 || 
-	    haveAccessMemory(div.inputB,vm) == 0 || 
-	    haveAccessMemory(div.dest,vm)   == 0){
+	if (haveAccessMemory(div.dest,vm) == 0){
 		return 0;
 	}
-	//Div. by 0 not allowed
-	if (vm->datamemory[div.inputB] == 0){
-		return 0;
-	}
+
 	if (div.addr == 1){
+		if (haveAccessMemory(div.inputA,vm) == 0 || haveAccessMemory(div.inputB,vm) == 0){
+			return 0;
+		}
+		//Div. by 0 not allowed
+		if (vm->datamemory[div.inputB] == 0){
+			return 0;
+		}
 		vm->datamemory[div.dest] = vm->datamemory[div.inputA] / vm->datamemory[div.inputB];
 	}else{
 		vm->datamemory[div.dest] = div.inputA / div.inputB;
 
 	}
 	return 1;
+}
+
+int andInstruction(instruction i, VirtualMachine *vm){
+	LogicInstructionsTwoInput and;
+	memcpy(&and, &i, sizeof(LogicInstructionsTwoInput));
+	
+	//Check if instruction have access  the position of memory requested
+	if (haveAccessMemory(and.dest,vm) == 0){
+		return 0;
+	}
+	if (and.addr == 1){
+		if (haveAccessMemory(and.inputA,vm) == 0 || haveAccessMemory(and.inputB,vm) == 0){
+			return 0;
+		}
+		vm->datamemory[and.dest] = vm->datamemory[and.inputA] & vm->datamemory[and.inputB];
+	}else{
+		vm->datamemory[and.dest] = and.inputA & and.inputB;
+	}
+	return 1;
+}
+int orInstruction(instruction i, VirtualMachine *vm){
+	LogicInstructionsTwoInput or;
+	memcpy(&or, &i, sizeof(LogicInstructionsTwoInput));
+	
+	//Check if instruction have access  the position of memory requested
+	if (haveAccessMemory(or.dest,vm) == 0){
+		return 0;
+	}
+	if (or.addr == 1){
+		if (haveAccessMemory(or.inputA,vm) == 0 || haveAccessMemory(or.inputB,vm) == 0){
+			return 0;
+		}
+		vm->datamemory[or.dest] = vm->datamemory[or.inputA] & vm->datamemory[or.inputB];
+	}else{
+		vm->datamemory[or.dest] = or.inputA & or.inputB;
+	}
+	return 1;
+
+}
+int xorInstruction(instruction i, VirtualMachine *vm){
+	LogicInstructionsTwoInput xor;
+	memcpy(&xor, &i, sizeof(LogicInstructionsTwoInput));
+	
+	//Check if instruction have access  the position of memory requested
+	if (haveAccessMemory(xor.dest,vm) == 0){
+		return 0;
+	}
+	if (xor.addr == 1){
+		if (haveAccessMemory(xor.inputA,vm) == 0 || haveAccessMemory(xor.inputB,vm) == 0){
+			return 0;
+		}
+		vm->datamemory[xor.dest] = vm->datamemory[xor.inputA] ^ vm->datamemory[xor.inputB];
+	}else{
+		vm->datamemory[xor.dest] = xor.inputA ^ xor.inputB;
+	}
+	return 1;
+
 }
 int computeInstruction(VirtualMachine *vm){
 	int result;
@@ -197,7 +260,7 @@ int computeInstruction(VirtualMachine *vm){
 	}
 	unsigned int instruc = vm->criature[vm->PC];
 	i= createInstruction(instruc);
-	printf("Opcode %u\n",i.parameter);
+	printf("Opcode %u\n",i.opcode);
 
 	//Compute properly the instruction
 	switch(i.opcode){
@@ -211,24 +274,29 @@ int computeInstruction(VirtualMachine *vm){
 			break;
 		case OPCODE_MUL:
 			printf("MUL\n");
+			vm->ptrFunc = &mulInstruction;
 			break;
 		case OPCODE_DIV:
 			printf("DIV\n");
+			vm->ptrFunc = &divInstruction;
 			break;
-		case OPCODE_PUT:
-			printf("PUT\n");
+		case OPCODE_MOVE:
+			printf("MOVE\n"); //TODO: Prepare correctly the bits of move
 			break;
 		case OPCODE_AND:
 			printf("AND\n");
+			vm->ptrFunc = &andInstruction;
 			break;
 		case OPCODE_OR:
 			printf("OR\n");
+			vm->ptrFunc = &orInstruction;
 			break;
 		case OPCODE_NOT:
-			printf("NOT\n");
+			printf("NOT\n");  //TODO: Prepare struct of 1 logical input
 			break;
 		case OPCODE_XOR:
 			printf("XOR\n");
+			vm->ptrFunc = &xorInstruction;
 			break;
 		//unknown instruction
 		default:
