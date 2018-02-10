@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "virtualmachine.h"
 /**
  * Virtual Machine - AKRasm language
  * AKRasm is an assembly language developed
@@ -9,20 +11,6 @@
  * Author: Anïs Khoury Ribas
  *  
  */
-#define BITS_INSTRUCTION 32
-#define BITS_OPCODE       8    //2^8 instructions
-
-#define OPCODE_ADD  0x00
-#define OPCODE_SUB  0x01
-#define OPCODE_MUL  0x02
-#define OPCODE_DIV  0x03
-#define OPCODE_MOVE 0x04
-#define OPCODE_AND  0x05
-#define OPCODE_OR   0x06
-#define OPCODE_NOT  0x07
-#define OPCODE_XOR  0x08
-#define OPCODE_JZ   0x09   
-#define OPCODE_JQ   0x10
 
 typedef struct VirtualMachine VirtualMachine;
 typedef struct LogicInstructionsTwoInput AritmeticInstruction; //same structure but different operations!
@@ -129,6 +117,9 @@ int addInstruction(instruction i,VirtualMachine *vm){
 	}
 	return 1;
 }
+/*Return 0 if something go wrong, like addressing wrong memory
+  Return 1 if all okey
+*/
 int subInstruction(instruction i,VirtualMachine *vm){	
 	AritmeticInstruction sub;
 	memcpy(&sub, &i, sizeof(AritmeticInstruction));
@@ -147,13 +138,14 @@ int subInstruction(instruction i,VirtualMachine *vm){
 	}
 	return 1;
 }
+/*Return 0 if something go wrong, like addressing wrong memory
+  Return 1 if all okey
+*/
 int mulInstruction(instruction i,VirtualMachine *vm){	
 	AritmeticInstruction mul;
 	memcpy(&mul, &i, sizeof(AritmeticInstruction));
 	//Check if instruction have access  the position of memory requested
-	if (haveAccessMemory(mul.inputA,vm) == 0 || 
-	    haveAccessMemory(mul.inputB,vm) == 0 || 
-	    haveAccessMemory(mul.dest,vm)   == 0){
+	if (haveAccessMemory(mul.dest,vm)   == 0){
 		return 0;
 	}
 	if (mul.addr == 1){
@@ -189,7 +181,9 @@ int divInstruction(instruction i,VirtualMachine *vm){
 	}
 	return 1;
 }
-
+/*Return 0 if something go wrong, like addressing wrong memory
+  Return 1 if all okey
+*/
 int andInstruction(instruction i, VirtualMachine *vm){
 	LogicInstructionsTwoInput and;
 	memcpy(&and, &i, sizeof(LogicInstructionsTwoInput));
@@ -208,6 +202,9 @@ int andInstruction(instruction i, VirtualMachine *vm){
 	}
 	return 1;
 }
+/*Return 0 if something go wrong, like addressing wrong memory
+  Return 1 if all okey
+*/
 int orInstruction(instruction i, VirtualMachine *vm){
 	LogicInstructionsTwoInput or;
 	memcpy(&or, &i, sizeof(LogicInstructionsTwoInput));
@@ -227,6 +224,9 @@ int orInstruction(instruction i, VirtualMachine *vm){
 	return 1;
 
 }
+/*Return 0 if something go wrong, like addressing wrong memory
+  Return 1 if all okey
+*/
 int xorInstruction(instruction i, VirtualMachine *vm){
 	LogicInstructionsTwoInput xor;
 	memcpy(&xor, &i, sizeof(LogicInstructionsTwoInput));
@@ -298,6 +298,27 @@ int computeInstruction(VirtualMachine *vm){
 			printf("XOR\n");
 			vm->ptrFunc = &xorInstruction;
 			break;
+		case OPCODE_S_LEFT:
+			printf("SHIFT-LEFT\n");
+			//vm->ptrFunc = &shiftLeftInstruction;
+			break;
+		case OPCODE_S_RIGHT:
+			printf("SHIFT RIGHT\n");
+			//vm->ptrFunc = &shiftRightInstruction;
+			break;
+		case OPCODE_JZ:
+			printf("JZ\n");
+			//vm->ptrFunc = &jzInstruction;
+			break;
+		case OPCODE_JE:
+			printf("JE\n");
+			//vm->ptrFunc = &jeInstruction;
+			break;
+		case OPCODE_GOTO:
+			printf("SHIFT RIGHT\n");
+			//vm->ptrFunc = &gotoRightInstruction;
+			break;
+
 		//unknown instruction
 		default:
 			return -1;
@@ -316,7 +337,8 @@ int main(void){
 	vm = init_virtualmachine(5,5);
 	loadCriature(criature,2,vm);
 	
-	int result = computeInstruction(vm);
+	int result;
+	result = computeInstruction(vm);
 	printf("%d\n",result);
 	result = computeInstruction(vm);
 	printf("%d\n",result);	
