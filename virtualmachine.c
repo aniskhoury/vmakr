@@ -12,11 +12,6 @@
  *  
  */
 
-/* Copy the 32-bits instruction to the proper structure of instruction defined
-   in typedef instruction. Remember: the order of structure is important
-   Intel use little-endian: the important is not where you start, is where you end
-*/
-
 
 unsigned int haveAccessMemory(unsigned int n,VirtualMachine *vm){
 	if (vm->maxSizeData < n)
@@ -55,6 +50,10 @@ void loadCriature(unsigned int *criature, int n,VirtualMachine *vm){
 	}
 	vm->sizeCriature = n-1;
 }
+/* Copy the 32-bits instruction to the proper structure of instruction defined
+   in typedef instruction. Remember: the order of structure is important
+   Intel use little-endian: the important is not where you start, is where you end
+*/
 instruction createInstruction(unsigned int i){
 	instruction b;
 	memcpy(&b, &i, sizeof(struct instruction));
