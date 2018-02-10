@@ -12,51 +12,11 @@
  *  
  */
 
-typedef struct VirtualMachine VirtualMachine;
-typedef struct LogicInstructionsTwoInput AritmeticInstruction; //same structure but different operations!
-typedef struct instruction instruction;
-typedef struct LogicInstructionsTwoInput LogicInstructionsTwoInput;
-
-typedef struct instruction{
-	unsigned int parameter:24;  
-	unsigned int opcode:8;      
-}instruction;
-
-typedef struct LogicInstructionsTwoInput{
-	unsigned int inputB:7; //inputB indicates where or what value will be used for compute instruction	
-	unsigned int inputA:8; //inputA indicates where or what value will be used for compute instruction
-	unsigned int dest:8;   //dest is the address of memory where will be saved the result of operation
-	unsigned int addr:1;    //1-> the instruction will use Addr to get and store values Ex:
-	unsigned int opcode:8; //8 bits OPCODE
-}LogicInstructionsTwoInput;
-
-typedef struct VirtualMachine {
-	int PC;                          /*ProgramCounter*/
-	unsigned int maxSizeCriature;    /*num. instruccions-1 of criature reserved by Criature*/
-									 /*Optimitzation sizeCriature for function computeInstruction*/
-	unsigned int maxSizeData;        /*Lengh of memory reserved by Criature -1*/
-	                                 /*Optimitzation -1 for accessMemory function*/
-	unsigned int sizeCriature;       /*Lengh of real size criature-1. The sub 1 is for computeinstruction
-									   optimization.*/
-
-	/*Isolated memory. This Virtual Machine doesnt follow Von Neumann Architecture*/
-	unsigned int *criature;          				/*Every instruction have 32 bits*/
-	unsigned int *datamemory;        				/*Every addr of data memory is a 32 bit-unsigned*/
-	double *dataDmemory;      						/*Every addr of data memory is a 64 bit*/
-	int (*ptrFunc)(instruction i,VirtualMachine *vm); /*Pointer to instruction*/
-	
-}VirtualMachine;
-
-
 /* Copy the 32-bits instruction to the proper structure of instruction defined
    in typedef instruction. Remember: the order of structure is important
    Intel use little-endian: the important is not where you start, is where you end
 */
-instruction createInstruction(unsigned int i){
-	instruction b;
-	memcpy(&b, &i, sizeof(struct instruction));
-	return b;
-}
+
 
 unsigned int haveAccessMemory(unsigned int n,VirtualMachine *vm){
 	if (vm->maxSizeData < n)
@@ -95,7 +55,11 @@ void loadCriature(unsigned int *criature, int n,VirtualMachine *vm){
 	}
 	vm->sizeCriature = n-1;
 }
-
+instruction createInstruction(unsigned int i){
+	instruction b;
+	memcpy(&b, &i, sizeof(struct instruction));
+	return b;
+}
 /*Return 0 if something go wrong, like addressing wrong memory
   Return 1 if all okey
 */
